@@ -57,7 +57,15 @@ namespace AuthenticationServer
             });
             
             services.AddMvc();
-
+            //Add the following code
+            services.AddOpenIddict<ApplicationDbContext>()
+                .AddMvcBinders()
+                .EnableTokenEndpoint("/api/login")
+                //.EnableTokenEndpoint("/api/authorise")
+                .AllowPasswordFlow()
+                .DisableHttpsRequirement()
+                //Priority 1 remove this in production
+                .AddEphemeralSigningKey();
             // Add application services.
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
@@ -84,14 +92,11 @@ namespace AuthenticationServer
 
             app.UseIdentity();
 
-            // Add external authentication middleware below. To configure them please see http://go.microsoft.com/fwlink/?LinkID=532715
+            // Add this line
+            app.UseOpenIddict();
 
-            app.UseMvc(routes =>
-            {
-                routes.MapRoute(
-                    name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
-            });
+            // Replace the call to app.UseMvc with this line
+            app.UseMvcWithDefaultRoute();
         }
     }
 }
