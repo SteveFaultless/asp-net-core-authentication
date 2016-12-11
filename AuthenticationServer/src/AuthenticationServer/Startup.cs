@@ -12,6 +12,9 @@ using Microsoft.Extensions.Logging;
 using AuthenticationServer.Data;
 using AuthenticationServer.Models;
 using AuthenticationServer.Services;
+using Microsoft.AspNetCore.Mvc.Formatters;
+using Microsoft.Extensions.ObjectPool;
+using Newtonsoft.Json;
 
 namespace AuthenticationServer
 {
@@ -56,8 +59,20 @@ namespace AuthenticationServer
                 options.Password.RequireLowercase = false;
             });
             
-            services.AddMvc();
-
+            services.AddMvc(options =>
+            {
+               // options.InputFormatters.Insert(0,new BsonInputFormatter(new JsonSerializerSettings(), new DefaultObjectPoolProvider()));
+               // options.OutputFormatters.Insert(0, new BsonOutputFormatter(new JsonSerializerSettings()));
+            });
+            //Add the following code
+            services.AddOpenIddict<ApplicationDbContext>()
+                .AddMvcBinders()
+                .EnableTokenEndpoint("/api/login")
+                //.EnableTokenEndpoint("/api/authorise")
+                .AllowPasswordFlow()
+                .DisableHttpsRequirement()
+                //Priority 1 remove this in production
+                .AddEphemeralSigningKey();
             // Add application services.
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
@@ -84,14 +99,11 @@ namespace AuthenticationServer
 
             app.UseIdentity();
 
-            // Add external authentication middleware below. To configure them please see http://go.microsoft.com/fwlink/?LinkID=532715
+            // Add this line
+            app.UseOpenIddict();
 
-            app.UseMvc(routes =>
-            {
-                routes.MapRoute(
-                    name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
-            });
+            // Replace the call to app.UseMvc with this line
+            app.UseMvcWithDefaultRoute();
         }
     }
 }
